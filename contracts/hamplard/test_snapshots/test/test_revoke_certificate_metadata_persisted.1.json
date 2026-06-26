@@ -112,12 +112,12 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                 },
                 {
-                  "string": "COURSE-MAKEUP-001"
+                  "string": "COURSE-AUDIT-001"
                 },
                 {
                   "i128": {
                     "hi": 0,
-                    "lo": 600000000
+                    "lo": 500000000
                   }
                 },
                 {
@@ -146,7 +146,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
                 },
                 {
-                  "string": "COURSE-MAKEUP-001"
+                  "string": "COURSE-AUDIT-001"
                 }
               ]
             }
@@ -168,7 +168,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
                 },
                 {
-                  "string": "COURSE-MAKEUP-001"
+                  "string": "COURSE-AUDIT-001"
                 }
               ]
             }
@@ -189,7 +189,7 @@
                     {
                       "i128": {
                         "hi": 0,
-                        "lo": 600000000
+                        "lo": 500000000
                       }
                     }
                   ]
@@ -217,10 +217,10 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
                 },
                 {
-                  "string": "COURSE-MAKEUP-001"
+                  "string": "COURSE-AUDIT-001"
                 },
                 {
-                  "string": "evidence_hash"
+                  "string": "proof"
                 }
               ]
             }
@@ -242,16 +242,16 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
                 },
                 {
-                  "string": "CERT-REVOKE-TEST"
+                  "string": "CERT-AUDIT-TEST"
                 },
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
                 },
                 {
-                  "string": "COURSE-MAKEUP-001"
+                  "string": "COURSE-AUDIT-001"
                 },
                 {
-                  "string": "Makeup Artistry"
+                  "string": "Audit Course"
                 }
               ]
             }
@@ -274,10 +274,10 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
                 },
                 {
-                  "string": "CERT-REVOKE-TEST"
+                  "string": "CERT-AUDIT-TEST"
                 },
                 {
-                  "string": "ACADEMIC_DISHONESTY"
+                  "string": "ISSUED_IN_ERROR"
                 }
               ]
             }
@@ -286,7 +286,6 @@
         }
       ]
     ],
-    [],
     []
   ],
   "ledger": {
@@ -370,7 +369,7 @@
                   "symbol": "Certificate"
                 },
                 {
-                  "string": "CERT-REVOKE-TEST"
+                  "string": "CERT-AUDIT-TEST"
                 }
               ]
             },
@@ -390,7 +389,7 @@
                       "symbol": "Certificate"
                     },
                     {
-                      "string": "CERT-REVOKE-TEST"
+                      "string": "CERT-AUDIT-TEST"
                     }
                   ]
                 },
@@ -402,7 +401,7 @@
                         "symbol": "course_id"
                       },
                       "val": {
-                        "string": "COURSE-MAKEUP-001"
+                        "string": "COURSE-AUDIT-001"
                       }
                     },
                     {
@@ -410,7 +409,7 @@
                         "symbol": "course_title"
                       },
                       "val": {
-                        "string": "Makeup Artistry"
+                        "string": "Audit Course"
                       }
                     },
                     {
@@ -418,7 +417,7 @@
                         "symbol": "id"
                       },
                       "val": {
-                        "string": "CERT-REVOKE-TEST"
+                        "string": "CERT-AUDIT-TEST"
                       }
                     },
                     {
@@ -442,7 +441,7 @@
                         "symbol": "revocation_reason"
                       },
                       "val": {
-                        "string": "ACADEMIC_DISHONESTY"
+                        "string": "ISSUED_IN_ERROR"
                       }
                     },
                     {
@@ -496,7 +495,7 @@
                   "symbol": "Course"
                 },
                 {
-                  "string": "COURSE-MAKEUP-001"
+                  "string": "COURSE-AUDIT-001"
                 }
               ]
             },
@@ -516,7 +515,7 @@
                       "symbol": "Course"
                     },
                     {
-                      "string": "COURSE-MAKEUP-001"
+                      "string": "COURSE-AUDIT-001"
                     }
                   ]
                 },
@@ -544,7 +543,7 @@
                         "symbol": "id"
                       },
                       "val": {
-                        "string": "COURSE-MAKEUP-001"
+                        "string": "COURSE-AUDIT-001"
                       }
                     },
                     {
@@ -570,7 +569,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-                          "lo": 600000000
+                          "lo": 500000000
                         }
                       }
                     },
@@ -601,7 +600,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-                          "lo": 600000000
+                          "lo": 500000000
                         }
                       }
                     },
@@ -635,7 +634,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
                 },
                 {
-                  "string": "COURSE-MAKEUP-001"
+                  "string": "COURSE-AUDIT-001"
                 }
               ]
             },
@@ -658,7 +657,7 @@
                       "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARQG5"
                     },
                     {
-                      "string": "COURSE-MAKEUP-001"
+                      "string": "COURSE-AUDIT-001"
                     }
                   ]
                 },
@@ -672,7 +671,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-                          "lo": 600000000
+                          "lo": 500000000
                         }
                       }
                     },
@@ -697,7 +696,7 @@
                         "symbol": "course_id"
                       },
                       "val": {
-                        "string": "COURSE-MAKEUP-001"
+                        "string": "COURSE-AUDIT-001"
                       }
                     },
                     {
@@ -713,7 +712,7 @@
                         "symbol": "evidence_hash"
                       },
                       "val": {
-                        "string": "evidence_hash"
+                        "string": "proof"
                       }
                     },
                     {
@@ -1216,7 +1215,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-                          "lo": 120000000
+                          "lo": 100000000
                         }
                       }
                     },
@@ -1289,7 +1288,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-                          "lo": 480000000
+                          "lo": 400000000
                         }
                       }
                     },
@@ -1435,7 +1434,7 @@
                       "val": {
                         "i128": {
                           "hi": 0,
-                          "lo": 99400000000
+                          "lo": 99500000000
                         }
                       }
                     },

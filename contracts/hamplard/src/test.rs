@@ -361,11 +361,56 @@ fn test_revoke_certificate() {
     assert!(client.verify_certificate(&cert_id));
 
     // Revoke
-    client.revoke_certificate(&admin, &cert_id);
+    let reason = String::from_str(&env, "ACADEMIC_DISHONESTY");
+    client.revoke_certificate(&admin, &cert_id, &reason);
     assert!(!client.verify_certificate(&cert_id));
 
     let cert = client.get_certificate(&cert_id);
     assert!(cert.revoked);
+    assert_eq!(cert.revoked_by, Some(admin.clone()));
+    assert!(cert.revoked_at_ledger.is_some());
+    assert_eq!(cert.revocation_reason, Some(reason));
+}
+
+#[test]
+fn test_revoke_certificate_metadata_persisted() {
+    let (env, contract_id, token_id, admin, _treasury, instructor) = setup();
+    let client = HamplardContractClient::new(&env, &contract_id);
+
+    let student = Address::generate(&env);
+    token::StellarAssetClient::new(&env, &token_id).mint(&student, &100_000_000_000);
+
+    register_and_approve_course(
+        &env, &client, &token_id, &admin, &instructor, "COURSE-AUDIT-001", 500_000_000,
+    );
+
+    let course_id = String::from_str(&env, "COURSE-AUDIT-001");
+    let cert_id   = String::from_str(&env, "CERT-AUDIT-TEST");
+
+    client.enroll(&student, &course_id);
+    client.mark_completed(&admin, &student, &course_id, &Some(String::from_str(&env, "proof")));
+    client.issue_certificate(
+        &admin, &cert_id, &student, &course_id,
+        &String::from_str(&env, "Audit Course"),
+    );
+
+    // Certificate should have no revocation metadata before revocation
+    let cert_before = client.get_certificate(&cert_id);
+    assert!(!cert_before.revoked);
+    assert!(cert_before.revoked_by.is_none());
+    assert!(cert_before.revoked_at_ledger.is_none());
+    assert!(cert_before.revocation_reason.is_none());
+
+    let ledger_before = env.ledger().sequence();
+    let reason = String::from_str(&env, "ISSUED_IN_ERROR");
+    client.revoke_certificate(&admin, &cert_id, &reason);
+
+    // All revocation metadata must be stored after revocation
+    let cert_after = client.get_certificate(&cert_id);
+    assert!(cert_after.revoked);
+    assert_eq!(cert_after.revoked_by, Some(admin.clone()));
+    assert!(cert_after.revoked_at_ledger.unwrap() >= ledger_before);
+    assert_eq!(cert_after.revocation_reason, Some(String::from_str(&env, "ISSUED_IN_ERROR")));
 }
 
 // ============================================================

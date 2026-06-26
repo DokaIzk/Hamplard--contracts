@@ -416,11 +416,29 @@
                     },
                     {
                       "key": {
+                        "symbol": "revocation_reason"
+                      },
+                      "val": "void"
+                    },
+                    {
+                      "key": {
                         "symbol": "revoked"
                       },
                       "val": {
                         "bool": false
                       }
+                    },
+                    {
+                      "key": {
+                        "symbol": "revoked_at_ledger"
+                      },
+                      "val": "void"
+                    },
+                    {
+                      "key": {
+                        "symbol": "revoked_by"
+                      },
+                      "val": "void"
                     },
                     {
                       "key": {

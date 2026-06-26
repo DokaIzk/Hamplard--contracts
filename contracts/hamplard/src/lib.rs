@@ -90,6 +90,12 @@ pub struct Certificate {
     pub issued_at_ledger: u32,
     /// Whether this certificate has been revoked (e.g. cheating)
     pub revoked: bool,
+    /// Admin address that performed the revocation, if revoked
+    pub revoked_by: Option<Address>,
+    /// Ledger sequence when the revocation occurred, if revoked
+    pub revoked_at_ledger: Option<u32>,
+    /// Reason code supplied by the revoking admin, if revoked
+    pub revocation_reason: Option<String>,
 }
 
 /// Pending platform treasury update with effective ledger sequence
@@ -615,6 +621,9 @@ impl HamplardContract {
             instructor: course.instructor,
             issued_at_ledger: env.ledger().sequence(),
             revoked: false,
+            revoked_by: None,
+            revoked_at_ledger: None,
+            revocation_reason: None,
         };
 
         env.storage()
@@ -644,11 +653,14 @@ impl HamplardContract {
 
     /// Admin revokes a certificate (e.g. issued in error or academic dishonesty).
     /// Revoked certificates remain on-chain for audit purposes but are flagged.
+    /// The revoking admin's address, the ledger sequence, and a reason code are
+    /// all persisted so the revocation is fully auditable after the fact.
     ///
     /// # Arguments
     /// - `admin`          — must match stored admin
     /// - `certificate_id` — the certificate to revoke
-    pub fn revoke_certificate(env: Env, admin: Address, certificate_id: String) {
+    /// - `reason`         — short reason code (e.g. "ACADEMIC_DISHONESTY", "ISSUED_IN_ERROR")
+    pub fn revoke_certificate(env: Env, admin: Address, certificate_id: String, reason: String) {
         admin.require_auth();
         Self::require_admin(&env, &admin);
 
@@ -663,13 +675,17 @@ impl HamplardContract {
         }
 
         cert.revoked = true;
+        cert.revoked_by = Some(admin.clone());
+        cert.revoked_at_ledger = Some(env.ledger().sequence());
+        cert.revocation_reason = Some(reason.clone());
+
         env.storage()
             .persistent()
             .set(&DataKey::Certificate(certificate_id.clone()), &cert);
 
         env.events().publish(
             (Symbol::new(&env, "certificate_revoked"), certificate_id.clone()),
-            certificate_id,
+            (certificate_id, admin, reason),
         );
     }
 
