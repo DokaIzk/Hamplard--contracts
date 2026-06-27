@@ -250,6 +250,55 @@ fn test_enroll_success_with_payment_split() {
 }
 
 #[test]
+fn test_enroll_zero_price_free_course() {
+    let (env, contract_id, token_id, admin, treasury, instructor) = setup();
+    let client = HamplardContractClient::new(&env, &contract_id);
+
+    let student = Address::generate(&env);
+
+    // Register free course
+    register_and_approve_course(
+        &env, &client, &token_id, &admin, &instructor, "COURSE-FREE-001", 0,
+    );
+
+    // Enroll should succeed and no transfers should be attempted
+    client.enroll(&student, &String::from_str(&env, "COURSE-FREE-001"));
+
+    let enrollment = client.get_enrollment(&student, &String::from_str(&env, "COURSE-FREE-001"));
+    assert_eq!(enrollment.amount_paid, 0);
+
+    let course = client.get_course(&String::from_str(&env, "COURSE-FREE-001"));
+    assert_eq!(course.total_enrollments, 1);
+    assert_eq!(course.total_earned, 0);
+}
+
+#[test]
+#[should_panic(expected = "overflow computing platform fee")]
+fn test_enroll_fee_overflow() {
+    let (env, contract_id, token_id, admin, treasury, instructor) = setup();
+    let client = HamplardContractClient::new(&env, &contract_id);
+
+    // Choose a price large enough that price * 100 would overflow i128
+    let overflow_price: i128 = i128::MAX / 100 + 1;
+
+    // register with custom 100% platform fee to force multiplication by 100
+    client.register_course(
+        &instructor,
+        &String::from_str(&env, "COURSE-OVERFLOW-001"),
+        &overflow_price,
+        &token_id,
+        &100u32,
+    );
+    client.approve_course(&admin, &String::from_str(&env, "COURSE-OVERFLOW-001"));
+
+    let student = Address::generate(&env);
+    token::StellarAssetClient::new(&env, &token_id).mint(&student, &overflow_price);
+
+    // This enroll should panic due to overflow in fee calculation
+    client.enroll(&student, &String::from_str(&env, "COURSE-OVERFLOW-001"));
+}
+
+#[test]
 #[should_panic(expected = "already enrolled in this course")]
 fn test_enroll_duplicate() {
     let (env, contract_id, token_id, admin, sec_admin, _treasury, instructor) = setup();
