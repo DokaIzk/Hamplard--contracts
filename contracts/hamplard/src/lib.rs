@@ -352,7 +352,12 @@ impl HamplardContract {
                         .unwrap();
                     
                     if !enrollment.completed {
-                        let platform_amount = (enrollment.amount_paid * platform_fee_pct) / 100;
+                        let platform_amount = enrollment
+                            .amount_paid
+                            .checked_mul(platform_fee_pct)
+                            .map(|v| v / 100)
+                            .unwrap_or_else(|| panic!("overflow computing platform fee"));
+
                         let instructor_amount = enrollment.amount_paid - platform_amount;
 
                         // Refund platform fee from treasury
@@ -429,8 +434,13 @@ impl HamplardContract {
 
         let token_client = token::Client::new(&env, &course.token);
 
-        // Calculate revenue split
-        let platform_amount = (course.price * course.platform_fee_percent as i128) / 100;
+        // Calculate revenue split (overflow-safe)
+        let pct = course.platform_fee_percent as i128;
+        let platform_amount = course
+            .price
+            .checked_mul(pct)
+            .map(|v| v / 100)
+            .unwrap_or_else(|| panic!("overflow computing platform fee"));
         let instructor_amount = course.price - platform_amount;
 
         // Fetch treasury, applying any pending treasury update if effective
