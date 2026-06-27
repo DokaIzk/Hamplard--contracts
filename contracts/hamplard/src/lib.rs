@@ -114,6 +114,8 @@ pub enum DataKey {
     Certificate(String),
     /// Admin address — set at init, can approve courses and issue certificates
     Admin,
+    /// Secondary admin address for multi-sig operations
+    SecondaryAdmin,
     /// Platform treasury address — receives the platform fee share
     Treasury,
     /// Platform default fee percentage (overrideable per course)
@@ -124,6 +126,10 @@ pub enum DataKey {
     ApprovedToken(Address),
     /// Pending new admin address — must call accept_admin() to take effect
     PendingAdmin,
+    /// Pending new secondary admin address
+    PendingSecondaryAdmin,
+    /// Platform paused state flag
+    PlatformPaused,
 }
 
 // ============================================================
@@ -152,7 +158,7 @@ impl HamplardContract {
     /// - `admin`            — admin address (approves courses, issues certificates)
     /// - `treasury`         — platform treasury address (receives platform fee share)
     /// - `default_fee_pct`  — default platform fee percentage (e.g. 20 = 20%)
-    pub fn init(env: Env, admin: Address, treasury: Address, default_fee_pct: u32) {
+    pub fn init(env: Env, admin: Address, secondary_admin: Address, treasury: Address, default_fee_pct: u32) {
         admin.require_auth();
 
         if env.storage().instance().has(&DataKey::Admin) {
@@ -163,10 +169,16 @@ impl HamplardContract {
             panic!("fee percentage cannot exceed 100");
         }
 
+        if treasury == env.current_contract_address() {
+            panic!("treasury cannot be the contract address");
+        }
+
         env.storage().instance().extend_ttl(Self::INSTANCE_TTL_THRESHOLD, Self::INSTANCE_TTL_EXTEND_TO);
 
         env.storage().instance().set(&DataKey::Admin, &admin);
+        env.storage().instance().set(&DataKey::SecondaryAdmin, &secondary_admin);
         env.storage().instance().set(&DataKey::Treasury, &treasury);
+        env.storage().instance().set(&DataKey::PlatformPaused, &false);
         env.storage().instance().set(&DataKey::DefaultFee, &default_fee_pct);
     }
 
@@ -347,12 +359,14 @@ impl HamplardContract {
     /// Only admin can archive — this is a moderation action.
     pub fn archive_course(
         env: Env,
-        admin: Address,
+        admin1: Address,
+        admin2: Address,
         course_id: String,
         students_to_refund: Option<Vec<Address>>,
     ) {
-        admin.require_auth();
-        Self::require_admin(&env, &admin);
+        admin1.require_auth();
+        admin2.require_auth();
+        Self::require_multi_admin(&env, &admin1, &admin2);
         env.storage().instance().extend_ttl(Self::INSTANCE_TTL_THRESHOLD, Self::INSTANCE_TTL_EXTEND_TO);
 
         let mut course = Self::get_course_internal(&env, &course_id);
@@ -440,6 +454,10 @@ impl HamplardContract {
     /// - `course_id` — the course to enroll in
     pub fn enroll(env: Env, student: Address, course_id: String) {
         student.require_auth();
+
+        if env.storage().instance().get(&DataKey::PlatformPaused).unwrap_or(false) {
+            panic!("platform is paused");
+        }
 
         let mut course = Self::get_course_internal(&env, &course_id);
 
@@ -725,13 +743,34 @@ impl HamplardContract {
     // ADMIN MANAGEMENT
     // ----------------------------------------------------------
 
+    pub fn pause_platform(env: Env, admin: Address) {
+        admin.require_auth();
+        Self::require_admin(&env, &admin);
+        env.storage().instance().set(&DataKey::PlatformPaused, &true);
+    }
+
+    pub fn unpause_platform(env: Env, admin: Address) {
+        admin.require_auth();
+        Self::require_admin(&env, &admin);
+        env.storage().instance().set(&DataKey::PlatformPaused, &false);
+    }
+
+    pub fn withdraw_tokens(env: Env, admin: Address, token: Address, amount: i128, destination: Address) {
+        admin.require_auth();
+        Self::require_admin(&env, &admin);
+        let token_client = token::Client::new(&env, &token);
+        token_client.transfer(&env.current_contract_address(), &destination, &amount);
+    }
+
     /// Propose a new admin address (step 1 of two-step transfer).
     /// The new admin must call accept_admin() to complete the handover.
-    pub fn transfer_admin(env: Env, current_admin: Address, new_admin: Address) {
-        current_admin.require_auth();
-        Self::require_admin(&env, &current_admin);
+    pub fn transfer_admin(env: Env, admin1: Address, admin2: Address, new_admin: Address, new_secondary_admin: Address) {
+        admin1.require_auth();
+        admin2.require_auth();
+        Self::require_multi_admin(&env, &admin1, &admin2);
         env.storage().instance().extend_ttl(Self::INSTANCE_TTL_THRESHOLD, Self::INSTANCE_TTL_EXTEND_TO);
         env.storage().instance().set(&DataKey::PendingAdmin, &new_admin);
+        env.storage().instance().set(&DataKey::PendingSecondaryAdmin, &new_secondary_admin);
 
         env.events().publish(
             (Symbol::new(&env, "admin_proposed"), new_admin.clone()),
@@ -740,22 +779,31 @@ impl HamplardContract {
     }
 
     /// Accept a pending admin transfer (step 2 of two-step transfer).
-    /// Only the address nominated by transfer_admin() can call this.
-    pub fn accept_admin(env: Env, new_admin: Address) {
+    /// Only the addresses nominated by transfer_admin() can call this.
+    pub fn accept_admin(env: Env, new_admin: Address, new_secondary_admin: Address) {
         new_admin.require_auth();
+        new_secondary_admin.require_auth();
 
         let pending: Address = env
             .storage()
             .instance()
             .get(&DataKey::PendingAdmin)
             .unwrap_or_else(|| panic!("no pending admin"));
+            
+        let pending_sec: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::PendingSecondaryAdmin)
+            .unwrap_or_else(|| panic!("no pending secondary admin"));
 
-        if pending != new_admin {
-            panic!("caller is not the pending admin");
+        if pending != new_admin || pending_sec != new_secondary_admin {
+            panic!("callers are not the pending admins");
         }
 
         env.storage().instance().set(&DataKey::Admin, &new_admin);
+        env.storage().instance().set(&DataKey::SecondaryAdmin, &new_secondary_admin);
         env.storage().instance().remove(&DataKey::PendingAdmin);
+        env.storage().instance().remove(&DataKey::PendingSecondaryAdmin);
 
         env.events().publish(
             (Symbol::new(&env, "admin_transferred"), new_admin.clone()),
@@ -764,9 +812,15 @@ impl HamplardContract {
     }
 
     /// Update the platform treasury address.
-    pub fn update_treasury(env: Env, admin: Address, new_treasury: Address) {
-        admin.require_auth();
-        Self::require_admin(&env, &admin);
+    pub fn update_treasury(env: Env, admin1: Address, admin2: Address, new_treasury: Address) {
+        admin1.require_auth();
+        admin2.require_auth();
+        Self::require_multi_admin(&env, &admin1, &admin2);
+        
+        if new_treasury == env.current_contract_address() {
+            panic!("treasury cannot be the contract address");
+        }
+
         env.storage().instance().extend_ttl(Self::INSTANCE_TTL_THRESHOLD, Self::INSTANCE_TTL_EXTEND_TO);
 
         let effective_ledger = env.ledger().sequence() + 100;
@@ -891,6 +945,17 @@ impl HamplardContract {
     fn require_admin(env: &Env, caller: &Address) {
         if !Self::is_admin(env, caller) {
             panic!("unauthorized: caller is not admin");
+        }
+    }
+
+    fn require_multi_admin(env: &Env, caller1: &Address, caller2: &Address) {
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        let secondary_admin: Address = env.storage().instance().get(&DataKey::SecondaryAdmin).unwrap();
+
+        if (*caller1 == admin && *caller2 == secondary_admin) || (*caller1 == secondary_admin && *caller2 == admin) {
+            // ok
+        } else {
+            panic!("unauthorized: requires both admin signatures");
         }
     }
 }
