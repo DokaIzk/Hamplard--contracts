@@ -297,6 +297,9 @@
                 },
                 {
                   "string": "CERT-REVOKE-TEST"
+                },
+                {
+                  "string": "ACADEMIC_DISHONESTY"
                 }
               ]
             }
@@ -458,10 +461,34 @@
                     },
                     {
                       "key": {
+                        "symbol": "revocation_reason"
+                      },
+                      "val": {
+                        "string": "ACADEMIC_DISHONESTY"
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "revoked"
                       },
                       "val": {
                         "bool": true
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "revoked_at_ledger"
+                      },
+                      "val": {
+                        "u32": 0
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "revoked_by"
+                      },
+                      "val": {
+                        "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
                       }
                     },
                     {
